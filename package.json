@@ -1,0 +1,33 @@
+{
+  "name": "13-towers-of-hell",
+  "version": "0.1.0",
+  "private": true,
+  "description": "13 Towers of Hell - Monad Agentic RPG",
+  "workspaces": ["packages/*", "apps/*"],
+  "scripts": {
+    "dev:client": "npm run dev -w apps/client",
+    "dev:backend": "npm run dev -w apps/backend",
+    "dev:agents": "npm run dev -w apps/ai-agents",
+    "dev:hono": "npm run dev:hono -w apps/backend",
+    "build:client": "npm run build -w apps/client",
+    "build:backend": "npm run build -w apps/backend",
+    "build:contracts": "npm run build -w apps/contracts",
+    "start": "npx tsx apps/backend/src/server.ts",
+    "dev": "concurrently \"npm run dev:client\" \"npm run dev:backend\" \"npm run dev:agents\" \"npm run dev:hono\"",
+    "build": "npm run build:contracts && npm run build:backend && npm run build:client",
+    "lint": "biome check .",
+    "lint:fix": "biome check --apply .",
+    "format": "biome format --write .",
+    "test": "npm run test:client && npm run test:backend",
+    "test:client": "vitest run -w apps/client",
+    "test:backend": "vitest run -w apps/backend",
+    "test:watch": "vitest -w apps/client",
+    "typecheck": "tsc --noEmit -p apps/client/tsconfig.json && tsc --noEmit -p apps/backend/tsconfig.json"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.8.0",
+    "concurrently": "^8.2.2",
+    "typescript": "^5.4.0",
+    "vitest": "^1.6.0"
+  }
+}

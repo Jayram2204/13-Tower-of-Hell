@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>13 Towers of Hell</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #030205;
+      font-family: 'Courier New', monospace;
+      color: #c8c0b0;
+    }
+    #game-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    canvas {
+      display: block;
+      image-rendering: pixelated;
+    }
+    #ui-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+    #ui-overlay > * {
+      pointer-events: auto;
+    }
+
+    /* ── Frosted-glass HUD panel ── */
+    #hud-panel {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      background: rgba(10, 10, 15, 0.85);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid #f0c040;
+      border-radius: 8px;
+      padding: 14px 18px;
+      min-width: 210px;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    }
+    #hud-panel .hud-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 5px;
+    }
+    #hud-panel .hud-row:last-child {
+      margin-bottom: 0;
+    }
+    #hud-panel .hud-label {
+      font-size: 10px;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      opacity: 0.45;
+      min-width: 48px;
+    }
+    #hud-panel .hud-value {
+      font-size: 11px;
+      color: #FFFFFF;
+      font-weight: bold;
+    }
+    .bar-track {
+      flex: 1;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 4px;
+      overflow: hidden;
+      position: relative;
+    }
+    .bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.25s ease;
+    }
+    .bar-fill.hp {
+      background: linear-gradient(90deg, #b03028, #d04a3a);
+    }
+    .bar-fill.stamina {
+      background: linear-gradient(90deg, #c09830, #e8c848);
+    }
+    .bar-fill.renown {
+      background: linear-gradient(90deg, #6a5090, #a078d0);
+    }
+    .bar-text {
+      font-size: 9px;
+      opacity: 0.5;
+      min-width: 44px;
+      text-align: right;
+    }
+    #inventory-list {
+      margin-top: 8px;
+      font-size: 10px;
+      opacity: 0.6;
+      max-width: 200px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      padding-top: 6px;
+    }
+    #inventory-list .item {
+      margin-bottom: 2px;
+      letter-spacing: 0.5px;
+    }
+
+    /* ── Wallet widget (top-right) ── */
+    #wallet-widget {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      background: rgba(10, 10, 15, 0.72);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 8px;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
+      cursor: pointer;
+      transition: border-color 0.3s;
+    }
+    #wallet-widget:hover {
+      border-color: rgba(240, 192, 64, 0.3);
+    }
+    #wallet-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #555;
+      flex-shrink: 0;
+      transition: background 0.3s;
+    }
+    #wallet-dot.connected {
+      background: #50c878;
+      box-shadow: 0 0 8px rgba(80, 200, 120, 0.4);
+    }
+    #wallet-dot.connecting {
+      background: #f0c040;
+      animation: pulse 0.8s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+    #wallet-label {
+      font-size: 11px;
+      opacity: 0.8;
+      white-space: nowrap;
+    }
+    #wallet-label .monad-tag {
+      font-size: 9px;
+      opacity: 0.4;
+      margin-right: 4px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    #wallet-address {
+      font-size: 10px;
+      color: #50c878;
+    }
+    #wallet-widget.connected #wallet-label {
+      opacity: 1;
+    }
+
+    /* ── Quest log (right side, below wallet) ── */
+    #quest-log {
+      position: absolute;
+      top: 70px;
+      right: 16px;
+      font-size: 10px;
+      text-align: right;
+      background: rgba(10, 10, 15, 0.6);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      border-radius: 6px;
+      padding: 10px 14px;
+      min-width: 140px;
+    }
+    #quest-log .quest-item {
+      color: #555;
+      margin-bottom: 3px;
+      letter-spacing: 0.3px;
+    }
+    #quest-log .quest-item.active {
+      color: #b8942e;
+    }
+    #quest-log .quest-item.completed {
+      color: #3a8858;
+    }
+
+    /* ── Interaction prompt ── */
+    #interaction-prompt {
+      position: absolute;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #f0c040;
+      font-size: 13px;
+      text-shadow: 0 0 16px rgba(240, 192, 64, 0.3);
+      opacity: 0;
+      transition: opacity 0.25s;
+      background: rgba(10, 10, 15, 0.7);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      padding: 6px 18px;
+      border: 1px solid rgba(240, 192, 64, 0.15);
+      border-radius: 20px;
+      letter-spacing: 1px;
+    }
+    #interaction-prompt.visible {
+      opacity: 1;
+    }
+
+    /* ── Mute button ── */
+    #mute-btn {
+      position: absolute;
+      bottom: 16px;
+      left: 16px;
+      background: rgba(10, 10, 15, 0.6);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      color: #777;
+      padding: 6px 14px;
+      font-size: 11px;
+      font-family: inherit;
+      cursor: pointer;
+      border-radius: 6px;
+      transition: all 0.3s;
+      letter-spacing: 0.5px;
+    }
+    #mute-btn:hover {
+      border-color: rgba(240, 192, 64, 0.3);
+      color: #f0c040;
+    }
+    #mute-btn.muted {
+      border-color: rgba(192, 57, 43, 0.4);
+      color: #c0392b;
+    }
+
+    /* ── NPC Dialog (dynamic, agent-driven) ── */
+    #npc-dialog {
+      position: absolute;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 420px;
+      background: rgba(10, 10, 15, 0.92);
+      border: 1px solid #f0c040;
+      border-radius: 8px;
+      padding: 14px 18px;
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.7);
+    }
+    #npc-dialog.visible {
+      display: flex;
+    }
+    #npc-dialog-name {
+      font-size: 11px;
+      font-weight: bold;
+      color: #f0c040;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+    }
+    #npc-dialog-text {
+      font-size: 13px;
+      color: #e0d8c8;
+      line-height: 1.6;
+      min-height: 40px;
+      white-space: pre-wrap;
+    }
+    #npc-dialog-input-row {
+      display: flex;
+      gap: 8px;
+    }
+    #npc-dialog-input {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 4px;
+      padding: 8px 12px;
+      color: #fff;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      outline: none;
+    }
+    #npc-dialog-input:focus {
+      border-color: #f0c040;
+    }
+    #npc-dialog-send {
+      background: transparent;
+      color: #f0c040;
+      border: 1px solid #f0c040;
+      border-radius: 4px;
+      padding: 8px 16px;
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      font-weight: bold;
+      cursor: pointer;
+      letter-spacing: 1px;
+    }
+    #npc-dialog-send:hover {
+      background: rgba(240, 192, 64, 0.15);
+    }
+
+    /* ── Overlay ── */
+    #overlay-screen {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.85);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s;
+    }
+    #overlay-screen.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    #overlay-screen h1 {
+      color: #f0c040;
+      font-size: 32px;
+      margin-bottom: 16px;
+      text-transform: uppercase;
+      letter-spacing: 6px;
+      text-shadow: 0 0 40px rgba(240, 192, 64, 0.15);
+    }
+    #overlay-screen p {
+      color: #998;
+      font-size: 14px;
+      margin-bottom: 24px;
+      max-width: 420px;
+      text-align: center;
+      line-height: 1.7;
+    }
+    #overlay-screen button {
+      background: transparent;
+      color: #f0c040;
+      border: 1px solid rgba(240, 192, 64, 0.4);
+      padding: 12px 36px;
+      font-size: 14px;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.3s;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+    }
+    #overlay-screen button:hover {
+      background: rgba(240, 192, 64, 0.1);
+      border-color: #f0c040;
+    }
+    .loading-bar {
+      width: 240px;
+      height: 2px;
+      background: #1a1a1a;
+      margin-top: 16px;
+      border-radius: 1px;
+      overflow: hidden;
+    }
+    .loading-bar .fill {
+      height: 100%;
+      width: 0%;
+      background: #f0c040;
+      transition: width 0.3s;
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <canvas id="game-canvas"></canvas>
+    <div id="ui-overlay">
+      <div id="hud-panel">
+        <div class="hud-row">
+          <span class="hud-label">Floor</span>
+          <span class="hud-value" id="floor-display">TOWN</span>
+        </div>
+        <div class="hud-row">
+          <span class="hud-label">Name</span>
+          <span class="hud-value" id="player-name">---</span>
+        </div>
+        <div class="hud-row">
+          <span class="hud-label">HP</span>
+          <div class="bar-track"><div class="bar-fill hp" id="hp-bar" style="width:100%"></div></div>
+          <span class="bar-text" id="hp-text">100/100</span>
+        </div>
+        <div class="hud-row">
+          <span class="hud-label">STA</span>
+          <div class="bar-track"><div class="bar-fill stamina" id="stamina-bar" style="width:100%"></div></div>
+          <span class="bar-text" id="stamina-text">100/100</span>
+        </div>
+        <div class="hud-row">
+          <span class="hud-label">Renown</span>
+          <div class="bar-track"><div class="bar-fill renown" id="renown-bar" style="width:0%"></div></div>
+          <span class="bar-text" id="renown-text">0</span>
+        </div>
+        <div id="inventory-list"></div>
+      </div>
+
+      <div id="wallet-widget">
+        <div id="wallet-dot"></div>
+        <span id="wallet-label"><span class="monad-tag">MON</span><span id="wallet-address">Connect Wallet</span></span>
+      </div>
+
+      <div id="quest-log"></div>
+      <div id="interaction-prompt">[E] INTERACT</div>
+      <button id="mute-btn">♫ MUSIC</button>
+
+      <div id="npc-dialog">
+        <div id="npc-dialog-name"></div>
+        <div id="npc-dialog-text"></div>
+        <div id="npc-dialog-input-row">
+          <input id="npc-dialog-input" type="text" placeholder="Say something..." autocomplete="off" />
+          <button id="npc-dialog-send">SEND</button>
+        </div>
+      </div>
+
+      <div id="overlay-screen">
+        <h1 id="overlay-title">13 TOWERS OF HELL</h1>
+        <p id="overlay-desc">A WORLD BOUND BY SHADOW</p>
+        <button id="overlay-btn">ENTER</button>
+        <div class="loading-bar"><div class="fill" id="loading-fill"></div></div>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+# Python agent runtime (for future AI microservice)
+# fastapi
+# uvicorn
+# openai
+# pinecone-client
+# langchain

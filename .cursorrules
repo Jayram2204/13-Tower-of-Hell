@@ -1,0 +1,15 @@
+# 13 Towers of Hell — Architecture Rules
+
+## Monorepo Structure
+- `packages/shared-types/` — Shared TypeScript interfaces (PlayerState, Web3 payloads, AI responses)
+- `packages/game-config/` — Global constants (Floor data, Item IDs, Z-order index)
+- `apps/client/` — Frontend & game engine (Vite + TypeScript canvas)
+- `apps/backend/` — Backend API (Next.js)
+- `apps/ai-agents/` — AI agent microservice (Node.js)
+- `apps/contracts/` — Smart contracts (Foundry / Solidity, Monad EVM)
+
+## Conventions
+- All new code must match existing style (no comments, monospace font, silhouette aesthetic)
+- Imports: use relative paths within the same app; use workspace references for shared packages
+- Contracts: Solidity 0.8.27, Cancun EVM, via-ir optimizer
+- Client: 2D canvas engine (entities under engine/, rendering under engine/rendering/)

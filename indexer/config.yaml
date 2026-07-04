@@ -1,0 +1,103 @@
+name: ThirteenTowersAgentIndexer
+description: Indexes all agent contract events for the 13 Towers of Hell game engine
+networks:
+  - id: 10143
+    rpc_url: ${MONAD_RPC_URL}
+    start_block: ${INDEXER_START_BLOCK:-0}
+
+contracts:
+  - name: AgentRegistry
+    address: ${AGENT_REGISTRY_ADDRESS}
+    abi_file: ./abis/AgentRegistry.json
+    events:
+      - name: AgentRegistered
+        table: agent_registry
+      - name: AgentHeartbeat
+        table: agent_heartbeats
+      - name: AgentStatusChanged
+        table: agent_status_changes
+
+  - name: NPCRegistry
+    address: ${NPC_REGISTRY_ADDRESS}
+    abi_file: ./abis/NPCRegistry.json
+    events:
+      - name: NPCRegistered
+        table: npc_registry
+      - name: NPCHeartbeat
+        table: npc_heartbeats
+      - name: NPCCreditsUpdated
+        table: npc_credits
+      - name: NPCReputationUpdated
+        table: npc_reputation
+      - name: NPCInventoryUpdated
+        table: npc_inventory
+
+  - name: CoordinatorAgent
+    address: ${COORDINATOR_ADDRESS}
+    abi_file: ./abis/CoordinatorAgent.json
+    events:
+      - name: AgentRouted
+        table: agent_routes
+      - name: HeartbeatTimeout
+        table: heartbeat_timeouts
+
+  - name: WorkerAgent
+    address: ${WORKER_AGENT_ADDRESS}
+    abi_file: ./abis/WorkerAgent.json
+    events:
+      - name: EconomyTick
+        table: economy_ticks
+      - name: NPCCreditsSettled
+        table: npc_settlements
+
+  - name: HeroAgent
+    address: ${HERO_AGENT_ADDRESS}
+    abi_file: ./abis/HeroAgent.json
+    events:
+      - name: HeroRegistered
+        table: hero_registry
+      - name: FloorCleared
+        table: floor_clears
+      - name: QuestCompleted
+        table: quest_completions
+      - name: RenownAwarded
+        table: renown_awards
+
+  - name: EnemyAgent
+    address: ${ENEMY_AGENT_ADDRESS}
+    abi_file: ./abis/EnemyAgent.json
+    events:
+      - name: DifficultyConfigUpdated
+        table: difficulty_configs
+      - name: GroupAggroTriggered
+        table: group_aggro
+
+  - name: TrapAgent
+    address: ${TRAP_AGENT_ADDRESS}
+    abi_file: ./abis/TrapAgent.json
+    events:
+      - name: TrapRegistered
+        table: trap_registry
+      - name: TrapTriggered
+        table: trap_triggers
+      - name: TrapReset
+        table: trap_resets
+
+  - name: AdminAgent
+    address: ${ADMIN_AGENT_ADDRESS}
+    abi_file: ./abis/AdminAgent.json
+    events:
+      - name: FloorStateChanged
+        table: floor_state_changes
+      - name: FloorUnlocked
+        table: floor_unlocks
+      - name: GlobalDifficultyAdjusted
+        table: difficulty_adjustments
+
+database:
+  driver: postgres
+  url: ${INDEXER_DATABASE_URL}
+
+api:
+  port: 4001
+  graphql_endpoint: /v1/graphql
